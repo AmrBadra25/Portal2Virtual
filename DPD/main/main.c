@@ -19,52 +19,43 @@ int main() {
     #endif
     // Initialize actuator structure
     Actuator_S actuator = {0};
-
-    // Set number of threads to match your CPU cores
-    omp_set_num_threads(NUM_THREADS);
-
+    // Get the core ID of the current thread
+    int core_id = rt_core_id(); // Function to get the core ID
+    int num_cores = get_core_num();
     #ifdef PROFILE
     // Initialize profiling variables
     
     #endif
-    // Move parallel region outside the outer loop to reduce thread creation overhead
-    #pragma omp parallel private(actuator)
-    {
-        int thread_id = omp_get_thread_num();
-
-        // Process multiple iterations per thread to reduce overhead
-        #pragma omp for collapse(2)
-        for (int j = 0; j < NUM_ITERATIONS; j++) {
-            for (int i = 0; i < DATA_SIZE; i++) {
-                
-                // Load input and expected output
-                actuator.in_r = input_r[i];
-                actuator.in_i = input_i[i];
-                
-                // Perform DPD operation
-                actuator_func_single(&actuator);
-
-                // Store results in output arrays
-                output_r[i] = actuator.out_r;
-                output_i[i] = actuator.out_i;
-                
-                #ifdef TEST
-                fixed_point_t exp_r = expected_r[i];
-                fixed_point_t exp_i = expected_i[i];
-                // Update thread-local counters
-                if (abs(exp_r - actuator.out_r) <= MARGIN && abs(exp_i - actuator.out_i) <= MARGIN) {
-                    thread_correct_counts[thread_id]++;
-                } else {
-                    thread_wrong_counts[thread_id]++;
-                }
-                #endif
+    
+        for (int i = core_id; i < DATA_SIZE; i += num_cores) {
+            
+            // Load input and expected output
+            actuator.in_r = input_r[i];
+            actuator.in_i = input_i[i];
+            
+            // Perform DPD operation
+            actuator_func_single(&actuator);
+            // Store results in output arrays
+            output_r[i] = actuator.out_r;
+            output_i[i] = actuator.out_i;
+            
+            #ifdef TEST
+            fixed_point_t exp_r = expected_r[i];
+            fixed_point_t exp_i = expected_i[i];
+            // Update thread-local counters
+            if (abs(exp_r - actuator.out_r) <= MARGIN && abs(exp_i - actuator.out_i) <= MARGIN) {
+                thread_correct_counts[core_id]++;
+            } else {
+                thread_wrong_counts[core_id]++;
             }
+            #endif
         }
-    }
+        synch_barrier();
+
     #ifdef PROFILE
     // Print profiling results
     printf("Profiling results:\n");
-    printf("Total iterations: %d\n", NUM_ITERATIONS * DATA_SIZE);
+    printf("Total iterations: %d\n", DATA_SIZE);
     //printf("Total time: %f seconds\n", total_time);
     #endif
     #ifdef TEST
