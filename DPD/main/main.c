@@ -22,9 +22,10 @@ int main() {
     // Get the core ID of the current thread
     int core_id = rt_core_id(); // Function to get the core ID
     int num_cores = get_core_num();
+    printf("Core ID: %d, Number of cores: %d\n", core_id, num_cores);
     #ifdef PROFILE
     // Initialize profiling variables
-    
+
     #endif
     
         for (int i = core_id; i < DATA_SIZE; i += num_cores) {
@@ -51,6 +52,7 @@ int main() {
             #endif
         }
         synch_barrier();
+    
 
     #ifdef PROFILE
     // Print profiling results
