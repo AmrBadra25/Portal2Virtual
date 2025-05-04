@@ -12,17 +12,14 @@ static int thread_wrong_counts[NUM_THREADS] = {0};
 int main() {
 
 #ifdef PARALLEL
-    
-    #ifdef TEST
-    int total_correct = 0;
-    int total_wrong = 0;
-    #endif
-    // Initialize actuator structure
-    Actuator_S actuator = {0};
     // Get the core ID of the current thread
     int core_id = rt_core_id(); // Function to get the core ID
     int num_cores = get_core_num();
     printf("Core ID: %d, Number of cores: %d\n", core_id, num_cores);
+    synch_barrier(); // Synchronize all threads
+    
+    // Initialize actuator structure
+    Actuator_S actuator = {0};
     #ifdef PROFILE
     // Initialize profiling variables
 
@@ -55,22 +52,29 @@ int main() {
     
 
     #ifdef PROFILE
-    // Print profiling results
-    printf("Profiling results:\n");
-    printf("Total iterations: %d\n", DATA_SIZE);
-    //printf("Total time: %f seconds\n", total_time);
+    if (core_id == 0) {
+        // Calculate total time taken for the operation
+        //total_time = rt_get_time() - start_time;
+        // Print profiling results
+        printf("Profiling results:\n");
+        printf("Total iterations: %d\n", DATA_SIZE);
+        //printf("Total time: %f seconds\n", total_time);
+    }
     #endif
     #ifdef TEST
-    // Sum up thread-local counters
-    for (int i = 0; i < NUM_THREADS; i++) {
+    if (core_id == 0) {
+        int total_correct = 0;
+        int total_wrong = 0;
+        // Sum up thread-local counters
+        for (int i = 0; i < NUM_THREADS; i++) {
         total_correct += thread_correct_counts[i];
         total_wrong += thread_wrong_counts[i];
-    }
+        }
+        // Print the results for the first core
+        printf("Correct count: %d\n", total_correct);
+        printf("Wrong count: %d\n", total_wrong);
     
-
-    // Print the results
-    printf("Correct count: %d\n", total_correct);
-    printf("Wrong count: %d\n", total_wrong);
+    }
     #endif
     return 0;
 
