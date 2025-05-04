@@ -1,4 +1,4 @@
-#include "..\..\fixed\fixed.h"
+#include "..\fixed\fixed.h"
 
 fixed_point_t expected_i[] = {
 0b1111110001000011,

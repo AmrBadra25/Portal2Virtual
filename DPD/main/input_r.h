@@ -1,4 +1,4 @@
-#include "..\..\fixed\fixed.h"
+#include "..\fixed\fixed.h"
 
 fixed_point_t input_r [] = {
 0b1111111010001010,

@@ -3,29 +3,30 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include "..\actuator\actuator.h"
 #include "..\fixed\fixed.h"
-
-#if DATA_WIDTH == 16
-#include "array_16\input_i_16.h"
-#include "array_16\input_r_16.h"
-#include "array_16\expected_i_16.h"
-#include "array_16\expected_r_16.h"
-#elif DATA_WIDTH == 18
-#include "array_18\input_i_18.h"
-#include "array_18\input_r_18.h"
-#include "array_18\expected_i_18.h"
-#include "array_18\expected_r_18.h"
-#elif DATA_WIDTH == 32
-#include "array_32\input_i_32.h"
-#include "array_32\input_r_32.h"
-#include "array_32\expected_i_32.h"
-#include "array_32\expected_r_32.h"
-#endif
+#include "input_i.h"
+#include "input_r.h"
 
 #define DATA_SIZE 6240
-#define MARGIN 4  // Margin for comparison
+#define PARALLEL // Uncomment to enable parallel processing
+#ifdef PARALLEL
+    #define NUM_THREADS 6
+    #define NUM_ITERATIONS 1000
+#endif
+#define PROFILE // Uncomment to enable profiling
+#define TEST // Uncomment to enable testing
+#ifdef TEST
+#include "expected_i.h"
+#include "expected_r.h"
+#define MARGIN 4  
+#endif
+
+
+
+
 
 typedef struct {
     int count;
@@ -34,7 +35,7 @@ typedef struct {
 } Statistics_S;
 
 
-int statistical_analysis(double in_r, double in_i, double out_r, double out_i, double expected_out_r, double expected_out_i, Statistics_S *stats) {
+static inline int statistical_analysis(double in_r, double in_i, double out_r, double out_i, double expected_out_r, double expected_out_i, Statistics_S *stats) {
     // Update the statistical analysis variables
     (stats->count)++;
     (stats->sum_r) += in_r;
@@ -66,7 +67,7 @@ int statistical_analysis(double in_r, double in_i, double out_r, double out_i, d
     return 0;
 }
 
-int print_analysis_report(Statistics_S *correct_stats, Statistics_S *wrong_stats) {
+static inline int print_analysis_report(Statistics_S *correct_stats, Statistics_S *wrong_stats) {
     // Print the analysis report
     printf("Analysis report\n");
     printf("Total count: %d\n", correct_stats->count + wrong_stats->count);
